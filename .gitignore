@@ -1,0 +1,4 @@
+working-files/*
+.vscode/*
+.ipynb_checkpoints/*
+.env
