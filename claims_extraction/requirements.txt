@@ -2,8 +2,8 @@ requests==2.31.0
 pytesseract==0.3.10
 opencv-python==4.8.1.78
 Pillow==10.1.0
-torch==2.1.1
-transformers==4.35.2
+torch==2.1.2
+transformers==4.36.2
 easyocr==1.7.1
 numpy==1.26.2
 matplotlib==3.8.2
