@@ -29,7 +29,7 @@ for index, url in enumerate(urls):
     if feeds[index].keys() >= {'entries'}:
         feed_entries = feeds[index]['entries']
         print(feed_entries[0].keys())
-        required_fields = {'title', 'author', 'published'}
+        required_fields = {'title', 'author', 'published', 'link'}
         if not feed_entries[0].keys() >= required_fields:
             # all keys in required_fields should be present
             raise ValueError
