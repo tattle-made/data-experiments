@@ -24,7 +24,7 @@ for feed in feeds:
         # TODO: verify if raise error instead here
         publication_name.append(missing_title)
 
-for index, url in enumerate(urls):
+for index, _ in enumerate(feeds):
     # get item entries
     if feeds[index].keys() >= {'entries'}:
         feed_entries = feeds[index]['entries']
