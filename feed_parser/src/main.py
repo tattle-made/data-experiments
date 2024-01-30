@@ -1,9 +1,7 @@
 import feedparser
 import dateutil.parser
 
-urls = ['https://www.boomlive.in/feeds/tags/deepfake/feeds.xml',
-        'https://factly.in/category/deepfake/feed/',
-        ]
+urls = []
 
 feeds = [feedparser.parse(url) for url in urls]
 
