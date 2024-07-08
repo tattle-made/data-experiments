@@ -9,16 +9,14 @@
 ## Development
 
 ```bash
-git clone git@github.com:rebunitech/facebook-comment-scraper.git
 cd facebook-comment-scraper
 pip install -r requirements.txt
-pip install -e .
 ```
 
 ## Usage
 
 ```bash
-usage: fb-comment-scraper [-h] [-o output] url [url ...]
+usage: main.py [-h] [-o output] url [url ...]
 
 Process comment scraping from facebook post.
 
@@ -32,10 +30,3 @@ options:
 ```
 
 
-## License
-
-[GNU GENERAL PUBLIC LICENSE V3](LICENSE)
-
-## Author
-
-[Wendirad Demelash](http://github.com/wendirad)
