@@ -1,0 +1,4 @@
+jupyter==1.1.1
+selenium==4.28.1
+tqdm==4.67.1
+python-dotenv==1.0.1
