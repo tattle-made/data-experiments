@@ -4,3 +4,5 @@ working-files/*
 .env
 *.csv
 .idea
+**.ipynb_checkpoints/
+**.venv/
