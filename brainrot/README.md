@@ -1,16 +1,16 @@
 # Brainrot Analysis
 
-This repository contains experiments analyzing Instagram reels. We collected ~1500 reels from our instagram feed and wanted to look at what does one see on their feed? what goes around on instagram? is there a way through which we can find how much of the data is brainrot? 
+This repository contains experiments analyzing Instagram reels. We collected ~1500 reels from our instagram feed and wanted to look at what does one see on their feed? what goes around on instagram? is there a way through which we can find how much of the data is brainrot?
 
-- `analysis/`: Code to preprocess videos, extract embeddings, cluster, and prepare data for visualization.
-- `visualisation/`: Standalone HTML/CSS/JS visualizations to explore the clustered data and labels.
-- `search/`: Notebooks to build a simple embeddings index and run vector search over the videos.
+- [`analysis/`](https://github.com/tattle-made/data-experiments/tree/master/brainrot/analysis): Code to preprocess videos, extract embeddings, cluster, and prepare data for visualization.
+- [`visualisation/`](https://github.com/tattle-made/data-experiments/tree/master/brainrot/visualisation): Standalone HTML/CSS/JS visualizations to explore the clustered data and labels.
+- [`search/`](https://github.com/tattle-made/data-experiments/tree/master/brainrot/search): Notebooks to build a simple embeddings index and run vector search over the videos.
 
 Each folder includes its own README with per-file inputs/outputs and usage details:
 
-- See `analysis/README.md`
-- See `visualisation/README.md`
-- See `search/README.md`
+- See [`analysis/README.md`](https://github.com/tattle-made/data-experiments/blob/master/brainrot/analysis/README.md)
+- See [`visualisation/README.md`](https://github.com/tattle-made/data-experiments/blob/master/brainrot/visualisation/README.md)
+- See [`search/README.md`](https://github.com/tattle-made/data-experiments/blob/master/brainrot/search/README.md)
 
 ## Recommned way to run the code
 
