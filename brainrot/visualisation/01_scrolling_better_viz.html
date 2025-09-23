@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brainrot Analysis Lab</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Raleway', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #EDC9C4;
+            color: #252653;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding-top: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1600px;
+            background-color: #ffebcb;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            padding-bottom: 220px;
+            border: 1px solid #EDC9C4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #70234B;
+            margin-top: 0;
+            font-weight: 700;
+        }
+
+        #visualization {
+            position: relative;
+            width: 100%;
+            height: 800px;
+            background-color: #ffffff;
+            border: 1px solid #EDC9C4;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            cursor: grab;
+        }
+
+        #visualization:active {
+            cursor: grabbing;
+        }
+
+        .thumbnail-group .thumbnail-element {
+            will-change: transform, width, height, x, y, opacity;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .thumbnail-group.visible .thumbnail-element {
+            opacity: 1;
+        }
+
+        .thumbnail-group .background-splash-circle {
+            pointer-events: none;
+        }
+
+        .thumbnail-group .thumbnail-image {
+            pointer-events: all;
+            cursor: pointer;
+        }
+
+        #tooltip {
+            position: absolute;
+            background-color: rgba(37, 38, 83, 0.9);
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            will-change: opacity, left, top;
+            z-index: 10;
+            font-family: 'Raleway', Arial, sans-serif;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #514E80;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #mobile-widget {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 350px;
+            background-color: #514E80;
+            border-radius: 25px;
+            padding: 15px;
+            box-shadow: 0 6px 18px rgba(37, 38, 83, 0.4);
+            z-index: 105;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+            border: 3px solid #7F7AB0;
+        }
+
+        #widget-screen {
+            width: 100%;
+            height: 90%;
+            background-color: #252653;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 10px;
+            border: 1px solid #7F7AB0;
+        }
+
+        .video-player {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: transform 0.5s ease-in-out;
+            will-change: transform;
+        }
+
+        .video-active {
+            transform: translateY(0%);
+            z-index: 1;
+        }
+
+        .video-next {
+            transform: translateY(100%);
+            z-index: 0;
+        }
+
+        .video-scrolling-out {
+            transform: translateY(-100%);
+            z-index: 1;
+        }
+
+        #widget-home-button {
+            width: 60px;
+            height: 25px;
+            background-color: #7F7AB0;
+            border-radius: 10px;
+            margin-top: auto;
+            border: 1px solid #514E80;
+        }
+
+        #progress-info {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background-color: rgba(252, 191, 164, 0.85);
+            color: #70234B;
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 3px;
+            z-index: 6;
+            font-weight: 700;
+        }
+
+        .control-buttons {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .control-buttons button {
+            width: 45px;
+            height: 45px;
+            background-color: #E76D67;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            transition: background-color 0.2s ease;
+        }
+
+        .control-buttons button:hover {
+            background-color: #D95C56;
+        }
+
+        .control-buttons button svg {
+            width: 24px;
+            height: 24px;
+            stroke: #ffffff;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        #sound-toggle-btn .sound-on-icon {
+            display: block;
+        }
+
+        #sound-toggle-btn .sound-off-icon {
+            display: none;
+        }
+
+        #sound-toggle-btn.muted .sound-on-icon {
+            display: none;
+        }
+
+        #sound-toggle-btn.muted .sound-off-icon {
+            display: block;
+        }
+
+        #play-pause-btn .play-icon {
+            display: block;
+        }
+
+        #play-pause-btn .pause-icon {
+            display: none;
+        }
+
+        #play-pause-btn.playing .play-icon {
+            display: none;
+        }
+
+        #play-pause-btn.playing .pause-icon {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                align-items: center;
+            }
+
+            .container {
+                width: 100%;
+                padding: 10px;
+                padding-bottom: 150px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            #visualization {
+                height: 60vh;
+                min-height: 350px;
+            }
+
+            #mobile-widget {
+                width: 150px;
+                height: 265px;
+                bottom: 10px;
+                padding: 10px;
+                border-radius: 20px;
+            }
+
+            #widget-screen {
+                border-radius: 15px;
+                margin-bottom: 8px;
+            }
+
+            #widget-home-button {
+                width: 40px;
+                height: 18px;
+                border-radius: 8px;
+            }
+
+            .control-buttons {
+                bottom: 15px;
+                right: 15px;
+                gap: 8px;
+            }
+
+            .control-buttons button {
+                width: 40px;
+                height: 40px;
+            }
+
+            .control-buttons button svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            #tooltip {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.2em;
+            }
+
+            #mobile-widget {
+                width: 80%;
+                max-width: 180px;
+                height: auto;
+                aspect-ratio: 9 / 16;
+                max-height: 300px;
+                padding: 8px;
+            }
+
+            .container {
+                padding-bottom: 200px;
+            }
+
+            .control-buttons {
+                bottom: 10px;
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="tooltip"></div>
+    <div class="container">
+        <h1>Brainrot Analysis Lab</h1>
+        <div id="visualization">
+            <div class="loading">Loading data...</div>
+        </div>
+    </div>
+    <div id="mobile-widget">
+        <div id="widget-screen">
+            <video id="video-player-1" class="video-player" playsinline preload="auto"> Your browser does not support
+                the video tag. </video>
+            <video id="video-player-2" class="video-player" playsinline preload="auto"> Your browser does not support
+                the video tag. </video>
+            <div id="progress-info">Initializing...</div>
+        </div>
+        <div id="widget-home-button"></div>
+    </div>
+
+    <div class="control-buttons">
+        <button id="play-pause-btn" title="Play/Pause Sequence">
+            <svg class="play-icon" viewBox="0 0 24 24">
+                <polygon points="6 3 20 12 6 21 6 3"></polygon>
+            </svg>
+            <svg class="pause-icon" viewBox="0 0 24 24">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+        </button>
+        <button id="skip-to-end-btn" title="Skip to End">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <polygon points="13 19 22 12 13 5 13 19"></polygon>
+                <polygon points="2 19 11 12 2 5 2 19"></polygon>
+            </svg>
+        </button>
+        <button id="reset-scroll-btn" title="Reset Sequence">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                <path d="M21 21v-5h-5" />
+            </svg>
+        </button>
+        <button id="reset-zoom-btn" title="Reset Zoom">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+        </button>
+        <button id="sound-toggle-btn" class="muted" title="Toggle Sound">
+            <svg class="sound-on-icon" viewBox="0 0 24 24">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <svg class="sound-off-icon" viewBox="0 0 24 24">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <line x1="22" y1="9" x2="16" y2="15"></line>
+                <line x1="16" y1="9" x2="22" y2="15"></line>
+            </svg>
+        </button>
+    </div>
+
+    <script>
+        const getConfig = () => {
+            const vizElement = document.getElementById('visualization');
+            const screenWidth = window.innerWidth;
+            const isMobile = screenWidth <= 768;
+            const vizHeight = vizElement ? vizElement.clientHeight : 600;
+            return {
+                width: vizElement ? vizElement.clientWidth : window.innerWidth * 0.9,
+                height: vizHeight > 100 ? vizHeight : 600,
+                thumbnailSize: isMobile ? 45 : 70,
+                splashCircles: 4,
+                splashRadiusFactor: 0.6,
+                splashOffsetFactor: 0.25,
+                splashOpacity: 0.1,
+                maxThumbnails: isMobile ? 300 : 1000,
+                videoPreviewDuration: 1100,
+                delayBetweenVideos: 300,
+                transitionDuration: 500,
+                imageBaseURL: 'thumbnails/',
+                videoBaseURL: 'video_reels/'
+            };
+        };
+
+        let config = getConfig();
+
+        const visualizationDiv = d3.select("#visualization");
+        const tooltip = d3.select("#tooltip");
+        const progressInfo = d3.select("#progress-info");
+        const videoPlayer1 = document.getElementById("video-player-1");
+        const videoPlayer2 = document.getElementById("video-player-2");
+        const soundButton = d3.select("#sound-toggle-btn");
+        const resetButton = d3.select("#reset-zoom-btn");
+        const playPauseButton = d3.select("#play-pause-btn");
+        const resetScrollButton = d3.select("#reset-scroll-btn");
+        const skipToEndButton = d3.select("#skip-to-end-btn"); // Added
+
+        let fullData = [];
+        let displayData = [];
+        let currentVideoIndex = 0;
+        let svg, container, xScale, yScale, colorScale, zoom;
+        let activeVideoElement = videoPlayer1;
+        let inactiveVideoElement = videoPlayer2;
+        let isTransitioning = false;
+        let isMuted = true;
+        let isPaused = true;
+        let previewTimeoutId = null;
+        let nextVideoTimeoutId = null;
+        let transitionTimeoutId = null;
+
+        function addThumbnailToTSNE(d, index) {
+            const cx = xScale(d.reduced_embedding_normalized[0]);
+            const cy = yScale(d.reduced_embedding_normalized[1]);
+            const thumbnailPath = config.imageBaseURL + d.payload.video_id + ".jpg";
+            const group = container.append("g")
+                .datum(d)
+                .attr("class", "thumbnail-group")
+                .attr("transform", `translate(${cx},${cy})`);
+            const currentThumbnailSize = config.thumbnailSize;
+            for (let i = 0; i < config.splashCircles; i++) {
+                const offsetX = (Math.random() - 0.5) * 2 * currentThumbnailSize * config.splashOffsetFactor;
+                const offsetY = (Math.random() - 0.5) * 2 * currentThumbnailSize * config.splashOffsetFactor;
+                group.append("circle")
+                    .attr("class", "thumbnail-element background-splash-circle")
+                    .attr("cx", offsetX)
+                    .attr("cy", offsetY)
+                    .attr("r", currentThumbnailSize * config.splashRadiusFactor)
+                    .attr("fill", colorScale(d.cluster))
+                    .style("opacity", config.splashOpacity);
+            }
+            const img = group.append("image")
+                .attr("class", "thumbnail-element thumbnail-image")
+                .attr("x", -currentThumbnailSize / 2)
+                .attr("y", -currentThumbnailSize / 2)
+                .attr("width", currentThumbnailSize)
+                .attr("height", currentThumbnailSize)
+                .attr("href", thumbnailPath);
+            group.on("mouseover", function (event, data) {
+                d3.select(this).raise();
+                d3.select(this).select('.thumbnail-image')
+                    .transition().duration(150)
+                    .attr("width", currentThumbnailSize * 1.5)
+                    .attr("height", currentThumbnailSize * 1.5)
+                    .attr("x", -currentThumbnailSize * 0.75)
+                    .attr("y", -currentThumbnailSize * 0.75);
+                tooltip.style("opacity", 1)
+                    .html(`Video ID: ${data.payload.video_id}<br>Cluster: ${data.cluster}`)
+                    .style("left", event.pageX + 10 + "px")
+                    .style("top", event.pageY - 10 + "px");
+            }).on("mousemove", function (event) {
+                tooltip.style("left", event.pageX + 10 + "px")
+                    .style("top", event.pageY - 10 + "px");
+            }).on("mouseout", function (event, data) {
+                d3.select(this).select('.thumbnail-image')
+                    .transition().duration(150)
+                    .attr("width", currentThumbnailSize)
+                    .attr("height", currentThumbnailSize)
+                    .attr("x", -currentThumbnailSize / 2)
+                    .attr("y", -currentThumbnailSize / 2);
+                tooltip.style("opacity", 0);
+            });
+            setTimeout(() => {
+                group.classed("visible", true);
+            }, 50);
+        }
+
+        function clearTimeouts() {
+            clearTimeout(previewTimeoutId);
+            clearTimeout(nextVideoTimeoutId);
+            clearTimeout(transitionTimeoutId);
+            previewTimeoutId = null;
+            nextVideoTimeoutId = null;
+            transitionTimeoutId = null;
+        }
+
+        function preloadNextVideo() {
+            const nextIndex = currentVideoIndex + 1;
+            if (nextIndex < displayData.length) {
+                const nextItem = displayData[nextIndex];
+                if (nextItem.payload && nextItem.payload.video_id) {
+                    const nextVideoPath = config.videoBaseURL + nextItem.payload.video_id + ".mp4";
+                    inactiveVideoElement.src = nextVideoPath;
+                    inactiveVideoElement.load();
+                } else { inactiveVideoElement.src = ""; }
+            } else { inactiveVideoElement.src = ""; }
+        }
+
+        function processNextVideo() {
+            if (isPaused || currentVideoIndex >= displayData.length || isTransitioning) {
+                if (currentVideoIndex >= displayData.length && !isPaused) {
+                    progressInfo.text(`Done (${displayData.length})`);
+                    playPauseButton.classed("playing", false).attr("title", "Play Sequence");
+                    isPaused = true;
+                }
+                return;
+            }
+            isTransitioning = true;
+            const currentItem = displayData[currentVideoIndex];
+            progressInfo.text(`Playing ${currentVideoIndex + 1}/${displayData.length}`);
+            activeVideoElement.muted = isMuted;
+            activeVideoElement.currentTime = 0;
+            const playPromise = activeVideoElement.play();
+            if (playPromise !== undefined) {
+                playPromise.then(_ => {
+                    if (isPaused) { activeVideoElement.pause(); isTransitioning = false; return; }
+                    preloadNextVideo();
+                    previewTimeoutId = setTimeout(() => {
+                        if (isPaused) { isTransitioning = false; return; }
+                        activeVideoElement.pause();
+                        addThumbnailToTSNE(currentItem, currentVideoIndex);
+                        if (currentVideoIndex + 1 < displayData.length) {
+                            activeVideoElement.classList.remove('video-active');
+                            activeVideoElement.classList.add('video-scrolling-out');
+                            inactiveVideoElement.classList.remove('video-next');
+                            inactiveVideoElement.classList.add('video-active');
+                            transitionTimeoutId = setTimeout(() => {
+                                if (isPaused) { isTransitioning = false; return; }
+                                activeVideoElement.classList.remove('video-scrolling-out');
+                                activeVideoElement.classList.add('video-next');
+                                activeVideoElement.src = "";
+                                const temp = activeVideoElement;
+                                activeVideoElement = inactiveVideoElement;
+                                inactiveVideoElement = temp;
+                                currentVideoIndex++;
+                                isTransitioning = false;
+                                nextVideoTimeoutId = setTimeout(processNextVideo, config.delayBetweenVideos);
+                            }, config.transitionDuration);
+                        } else {
+                            isTransitioning = false;
+                            progressInfo.text(`Done (${displayData.length})`);
+                            playPauseButton.classed("playing", false).attr("title", "Play Sequence");
+                            isPaused = true;
+                            currentVideoIndex++; // Increment to mark completion
+                        }
+                    }, config.videoPreviewDuration);
+                }).catch(error => {
+                    addThumbnailToTSNE(currentItem, currentVideoIndex);
+                    currentVideoIndex++;
+                    isTransitioning = false;
+                    nextVideoTimeoutId = setTimeout(processNextVideo, config.delayBetweenVideos);
+                });
+            } else {
+                addThumbnailToTSNE(currentItem, currentVideoIndex);
+                currentVideoIndex++;
+                isTransitioning = false;
+                nextVideoTimeoutId = setTimeout(processNextVideo, config.delayBetweenVideos);
+            }
+        }
+
+        function resetSequence() {
+            isPaused = true;
+            isTransitioning = false;
+            playPauseButton.classed("playing", false).attr("title", "Play Sequence");
+            clearTimeouts();
+            currentVideoIndex = 0;
+            activeVideoElement.pause();
+            inactiveVideoElement.pause();
+            activeVideoElement.src = "";
+            inactiveVideoElement.src = "";
+            videoPlayer1.classList.remove('video-scrolling-out');
+            videoPlayer2.classList.remove('video-scrolling-out');
+            videoPlayer1.classList.add('video-active');
+            videoPlayer2.classList.add('video-next');
+            activeVideoElement = videoPlayer1;
+            inactiveVideoElement = videoPlayer2;
+            if (container) {
+                container.selectAll("g.thumbnail-group").remove();
+            }
+            if (displayData.length > 0) {
+                const firstItem = displayData[0];
+                if (firstItem.payload && firstItem.payload.video_id) {
+                    const firstVideoPath = config.videoBaseURL + firstItem.payload.video_id + ".mp4";
+                    activeVideoElement.src = firstVideoPath;
+                    activeVideoElement.load();
+                    progressInfo.text(`Ready (1/${displayData.length})`);
+                } else { progressInfo.text("Error: Invalid first item"); }
+            } else { progressInfo.text("No data"); }
+        }
+
+        function skipToEnd() {
+            if (!container || !displayData || displayData.length === 0) return;
+            isPaused = true;
+            isTransitioning = false;
+            clearTimeouts();
+            activeVideoElement.pause();
+            inactiveVideoElement.pause();
+            playPauseButton.classed("playing", false).attr("title", "Play Sequence");
+            container.selectAll("g.thumbnail-group").remove();
+            displayData.forEach((d, i) => {
+                addThumbnailToTSNE(d, i);
+            });
+            currentVideoIndex = displayData.length;
+            progressInfo.text(`Done (${displayData.length})`);
+        }
+
+        function updateVisualization() {
+            if (!svg || !displayData || displayData.length === 0) return;
+            svg.attr("width", config.width)
+                .attr("height", config.height);
+            const xExtent = d3.extent(displayData, d => d.reduced_embedding_normalized[0]);
+            const yExtent = d3.extent(displayData, d => d.reduced_embedding_normalized[1]);
+            const padding = 0.05;
+            xScale.domain([xExtent[0] - padding, xExtent[1] + padding])
+                .range([config.thumbnailSize / 2, config.width - config.thumbnailSize / 2]);
+            yScale.domain([yExtent[0] - padding, yExtent[1] + padding])
+                .range([config.thumbnailSize / 2, config.height - config.thumbnailSize / 2]);
+            const uniqueClusters = [...new Set(displayData.map(d => d.cluster))].sort(d3.ascending);
+            colorScale.domain(uniqueClusters);
+            container.selectAll("g.thumbnail-group").remove();
+            displayData.forEach((d, i) => {
+                addThumbnailToTSNE(d, i);
+            });
+            svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
+        }
+
+        function initializeVisualization() {
+            if (displayData.length === 0) {
+                visualizationDiv.select(".loading").text("No data to display.");
+                progressInfo.text("No data");
+                return;
+            }
+            visualizationDiv.select(".loading").remove();
+            if (!svg) {
+                svg = visualizationDiv.append("svg");
+                container = svg.append("g");
+            }
+            svg.attr("width", config.width)
+                .attr("height", config.height);
+            const xExtent = d3.extent(displayData, d => d.reduced_embedding_normalized[0]);
+            const yExtent = d3.extent(displayData, d => d.reduced_embedding_normalized[1]);
+            const padding = 0.05;
+            xScale = d3.scaleLinear()
+                .domain([xExtent[0] - padding, xExtent[1] + padding])
+                .range([config.thumbnailSize / 2, config.width - config.thumbnailSize / 2]);
+            yScale = d3.scaleLinear()
+                .domain([yExtent[0] - padding, yExtent[1] + padding])
+                .range([config.thumbnailSize / 2, config.height - config.thumbnailSize / 2]);
+            const uniqueClusters = [...new Set(displayData.map(d => d.cluster))].sort(d3.ascending);
+            const themeColors = ["#fcbfa4", "#f4c6d7", "#f39695", "#e99469", "#f3a444", "#e56d67", "#815089", "#4d5182", "#7F7AB0", "#E68BBA"];
+            colorScale = d3.scaleOrdinal(themeColors).domain(uniqueClusters);
+            if (!zoom) {
+                zoom = d3.zoom()
+                    .scaleExtent([0.3, 10])
+                    .on("zoom", (event) => { if (container) { container.attr("transform", event.transform); } });
+                svg.call(zoom);
+            }
+            updateVisualization();
+            resetSequence();
+        }
+
+        d3.json("video_tsne_enriched_data_viz_without_base64.json")
+            .then((data) => {
+                fullData = data;
+                config = getConfig();
+                displayData = fullData.length > config.maxThumbnails
+                    ? d3.shuffle(fullData.slice()).slice(0, config.maxThumbnails)
+                    : fullData;
+                initializeVisualization();
+
+                soundButton.on("click", () => {
+                    isMuted = !isMuted;
+                    soundButton.classed("muted", isMuted);
+                    soundButton.attr("title", isMuted ? "Unmute" : "Mute");
+                    activeVideoElement.muted = isMuted;
+                    inactiveVideoElement.muted = isMuted;
+                });
+                soundButton.classed("muted", isMuted).attr("title", isMuted ? "Unmute" : "Mute");
+
+                resetButton.on("click", () => {
+                    if (svg && zoom) { svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity); }
+                });
+
+                playPauseButton.on("click", () => {
+                    isPaused = !isPaused;
+                    playPauseButton.classed("playing", !isPaused);
+                    playPauseButton.attr("title", isPaused ? "Play Sequence" : "Pause Sequence");
+                    if (isPaused) {
+                        clearTimeouts();
+                        activeVideoElement.pause();
+                        isTransitioning = false;
+                        if (displayData.length > 0) {
+                            progressInfo.text(`Paused (${Math.min(currentVideoIndex + 1, displayData.length)}/${displayData.length})`);
+                        }
+                    } else {
+                        if (displayData.length > 0 && currentVideoIndex < displayData.length) {
+                            progressInfo.text(`Playing ${currentVideoIndex + 1}/${displayData.length}`);
+                        } else if (displayData.length > 0) {
+                            progressInfo.text(`Done (${displayData.length})`);
+                            playPauseButton.classed("playing", false).attr("title", "Play Sequence"); // Ensure button resets if trying to play when done
+                            isPaused = true;
+                            return; // Don't start processing if already done
+                        }
+                        isTransitioning = false;
+                        processNextVideo();
+                    }
+                });
+
+                resetScrollButton.on("click", () => { resetSequence(); });
+
+                skipToEndButton.on("click", () => { skipToEnd(); }); // Added listener
+
+            })
+            .catch((error) => {
+                console.error("Error loading data:", error);
+                const loading = visualizationDiv.select(".loading");
+                if (!loading.empty()) { loading.text("Error loading data. Check console."); }
+                else { visualizationDiv.append("div").attr("class", "loading").text("Error loading data."); }
+                progressInfo.text("Error");
+            });
+
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                console.log("Resizing...");
+                config = getConfig();
+                const newMax = config.maxThumbnails;
+                if (displayData.length > newMax) {
+                    displayData = d3.shuffle(fullData.slice()).slice(0, newMax);
+                } else if (fullData.length > displayData.length && displayData.length < newMax) {
+                    displayData = d3.shuffle(fullData.slice()).slice(0, newMax);
+                }
+                // Decide if resize should show all thumbnails or reset the view
+                // Option 1: Show all thumbnails (like skipToEnd)
+                // skipToEnd(); // Call skipToEnd to show all immediately after resize
+                // Option 2: Update visualization but keep current state (requires more complex logic if paused/playing)
+                updateVisualization(); // Current behavior: redraws all, resets zoom
+                // Option 3: Reset sequence on resize
+                // resetSequence();
+
+                // Current implementation uses updateVisualization which redraws all points & resets zoom.
+                // If skipToEnd is preferred on resize, uncomment that line and comment updateVisualization().
+
+
+            }, 250);
+        });
+    </script>
+</body>
+
+</html>

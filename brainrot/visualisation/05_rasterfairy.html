@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Thumbnail Grid</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        .thumbnail-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: auto;
+        }
+
+        .thumbnail-item {
+            position: absolute;
+            border: 1px solid #ccc;
+            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+            box-sizing: border-box;
+            object-fit: cover;
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="thumbnailContainer" class="thumbnail-container"></div>
+
+    <script>
+        const jsonDataPath = 'video_tsne_enriched_data_viz_without_base64.json';
+        const thumbnailContainer = document.getElementById('thumbnailContainer');
+
+        const THUMBNAIL_BOX_WIDTH_PX = 60;
+        const BORDER_WIDTH_PX = 1;
+        const CONTENT_ASPECT_RATIO = 9.0 / 16.0;
+
+        const CONTENT_WIDTH_PX = THUMBNAIL_BOX_WIDTH_PX - (2 * BORDER_WIDTH_PX);
+        const CONTENT_HEIGHT_PX = CONTENT_WIDTH_PX / CONTENT_ASPECT_RATIO;
+        const THUMBNAIL_BOX_HEIGHT_PX = CONTENT_HEIGHT_PX + (2 * BORDER_WIDTH_PX);
+
+        const GAP_PX = 4;
+
+        fetch(jsonDataPath)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText + '. Ensure the JSON file is in the correct location and accessible.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!Array.isArray(data) || data.length === 0) {
+                    thumbnailContainer.innerHTML = '<p>No data found in JSON file or data is not an array.</p>';
+                    return;
+                }
+
+                let maxCoordX = 0;
+                let maxCoordY = 0;
+
+                data.forEach(item => {
+                    if (item.rasterfairy_coordinates && typeof item.rasterfairy_coordinates[0] === 'number' && item.rasterfairy_coordinates[0] > maxCoordX) {
+                        maxCoordX = item.rasterfairy_coordinates[0];
+                    }
+                    if (item.rasterfairy_coordinates && typeof item.rasterfairy_coordinates[1] === 'number' && item.rasterfairy_coordinates[1] > maxCoordY) {
+                        maxCoordY = item.rasterfairy_coordinates[1];
+                    }
+                });
+
+                const containerWidth = (maxCoordX + 1) * (THUMBNAIL_BOX_WIDTH_PX + GAP_PX);
+                const containerHeight = (maxCoordY + 1) * (THUMBNAIL_BOX_HEIGHT_PX + GAP_PX);
+                thumbnailContainer.style.width = containerWidth + 'px';
+                thumbnailContainer.style.height = containerHeight + 'px';
+
+                data.forEach(item => {
+                    if (!item.payload || !item.payload.thumbnail_path || !item.rasterfairy_coordinates) {
+                        console.warn('Skipping item due to missing data:', item);
+                        return;
+                    }
+
+                    const img = document.createElement('img');
+                    img.src = item.payload.thumbnail_path;
+                    img.alt = item.payload.video_id || 'thumbnail';
+                    img.classList.add('thumbnail-item');
+
+                    img.style.width = THUMBNAIL_BOX_WIDTH_PX + 'px';
+                    img.style.height = THUMBNAIL_BOX_HEIGHT_PX + 'px';
+
+                    const coordX = item.rasterfairy_coordinates[0];
+                    const coordY = item.rasterfairy_coordinates[1];
+
+                    img.style.left = coordX * (THUMBNAIL_BOX_WIDTH_PX + GAP_PX) + 'px';
+                    img.style.top = coordY * (THUMBNAIL_BOX_HEIGHT_PX + GAP_PX) + 'px';
+
+                    img.onerror = function () {
+                        this.style.visibility = 'hidden';
+                        console.warn('Failed to load image:', this.src);
+                    };
+
+                    thumbnailContainer.appendChild(img);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching or processing JSON data:', error);
+                thumbnailContainer.innerHTML = '<p>Error loading thumbnails: ' + error.message + '. Check console for more details.</p>';
+            });
+    </script>
+
+</body>
+
+</html>

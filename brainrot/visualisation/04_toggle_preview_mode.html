@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brainrot Analysis Lab</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Raleway', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #EDC9C4;
+            color: #252653;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding-top: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1600px;
+            margin: 0;
+            background-color: #ffebcb;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            border: 1px solid #EDC9C4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #70234B;
+            font-weight: 700;
+            margin-top: 0;
+        }
+
+        #visualization {
+            position: relative;
+            width: 100%;
+            height: 950px;
+            border: 1px solid #EDC9C4;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: grab;
+        }
+
+        #visualization:active {
+            cursor: grabbing;
+        }
+
+        .contour {
+            fill-opacity: 0.4;
+            stroke: none;
+            pointer-events: none;
+        }
+
+        .thumbnail-group {
+            cursor: pointer;
+        }
+
+        .thumbnail-foreign-object {
+            transition: transform 0.15s ease-in-out, width 0.15s ease-in-out, height 0.15s ease-in-out, x 0.15s ease-in-out, y 0.15s ease-in-out;
+            overflow: hidden;
+            border-radius: 3px;
+            background-color: transparent;
+            will-change: transform, width, height, x, y;
+        }
+
+        .fo-content {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            margin: 0;
+            padding: 0;
+            border: none;
+            background-color: transparent;
+        }
+
+        .fo-thumbnail {}
+
+        .fo-video {
+            display: none;
+        }
+
+        .thumbnail-group:hover .fo-video {
+            object-fit: contain;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #514E80;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .control-buttons {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .control-buttons button {
+            width: 45px;
+            height: 45px;
+            background-color: #E76D67;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            transition: background-color 0.2s ease, opacity 0.2s ease;
+            opacity: 1;
+        }
+
+        .control-buttons button:hover {
+            background-color: #D95C56;
+        }
+
+        .control-buttons button.disabled {
+            opacity: 0.6;
+            background-color: #cccccc;
+            cursor: default;
+        }
+
+        .control-buttons button.disabled:hover {
+            background-color: #bbbbbb;
+        }
+
+        .control-buttons button svg {
+            width: 24px;
+            height: 24px;
+            stroke: #ffffff;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        #sound-toggle-btn .sound-on-icon {
+            display: block;
+        }
+
+        #sound-toggle-btn .sound-off-icon {
+            display: none;
+        }
+
+        #sound-toggle-btn.muted .sound-on-icon {
+            display: none;
+        }
+
+        #sound-toggle-btn.muted .sound-off-icon {
+            display: block;
+        }
+
+        #toggle-hover-play-btn .hover-play-disabled-icon {
+            display: block;
+        }
+
+        #toggle-hover-play-btn .hover-play-enabled-icon {
+            display: none;
+        }
+
+        #toggle-hover-play-btn.enabled .hover-play-disabled-icon {
+            display: none;
+        }
+
+        #toggle-hover-play-btn.enabled .hover-play-enabled-icon {
+            display: block;
+        }
+
+        .toggle-switch-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: rgba(231, 109, 103, 0.8);
+            padding: 5px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            min-width: 90px;
+            justify-content: center;
+        }
+
+        .toggle-label {
+            font-size: 0.8em;
+            color: #ffffff;
+            font-weight: bold;
+            user-select: none;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            transition: .4s;
+            box-sizing: border-box;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #777777;
+            transition: .4s;
+        }
+
+        input:checked+.slider {
+            background-color: #D95C56;
+            border-color: #D95C56;
+        }
+
+        input:checked+.slider:before {
+            background-color: white;
+        }
+
+
+        input:focus+.slider {
+            box-shadow: 0 0 1px #D95C56;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(20px);
+        }
+
+        .slider.round {
+            border-radius: 24px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        .filter-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            display: flex;
+            flex-direction: column;
+            /* Stack filter sections */
+            gap: 15px;
+            /* Space between Day and Label filters */
+            z-index: 100;
+            background-color: rgba(255, 235, 203, 0.85);
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-height: 45vh;
+            /* Limit overall height */
+            width: 250px;
+            /* Give it some width */
+            overflow-y: auto;
+            /* Allow scrolling for the whole panel */
+        }
+
+        .filter-section {
+            border-bottom: 1px solid #EDC9C4;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .filter-section:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+
+
+        .filter-controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            gap: 10px;
+        }
+
+        .filter-controls-header label,
+        .filter-section h4 {
+            font-family: 'Raleway', Arial, sans-serif;
+            color: #70234B;
+            font-weight: 700;
+            font-size: 0.95em;
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .filter-section h4 {
+            margin-bottom: 8px;
+            text-align: center;
+            font-size: 0.9em;
+        }
+
+        .filter-controls-days,
+        .filter-controls-labels {
+            /* Apply common styles */
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            max-height: 150px;
+            /* Max height for checkbox lists */
+            overflow-y: auto;
+            /* Scroll individual lists if needed */
+            padding-right: 5px;
+            /* Space for scrollbar */
+        }
+
+        .checkbox-list-container {
+            /* Container for checkbox items */
+            max-height: 150px;
+            overflow-y: auto;
+            padding-right: 5px;
+            /* Space for scrollbar */
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            /* Slightly more gap */
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            cursor: pointer;
+            accent-color: #E76D67;
+            flex-shrink: 0;
+            /* Prevent checkbox shrinking */
+        }
+
+        .checkbox-item label {
+            font-family: 'Raleway', Arial, sans-serif;
+            color: #252653;
+            font-size: 0.85em;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            /* Handle long labels */
+        }
+
+
+        .filter-controls button {
+            font-family: 'Raleway', Arial, sans-serif;
+            background-color: #E76D67;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            /* Slightly smaller padding */
+            cursor: pointer;
+            font-size: 0.85em;
+            /* Slightly smaller font */
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+            /* margin-left: auto; */
+            /* Removed auto margin */
+        }
+
+        .filter-controls button:hover {
+            background-color: #D95C56;
+        }
+
+        .all-item {
+            /* Style for "All Days" / "All Labels" */
+            font-weight: bold;
+            width: 100%;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #EDC9C4;
+            padding-bottom: 5px;
+        }
+
+        .all-item label {
+            font-weight: bold;
+        }
+
+        #legend {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 10px 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-height: 250px;
+            max-width: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            font-family: 'Raleway', Arial, sans-serif;
+        }
+
+        #legend h4 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            color: #70234B;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .legend-color-box {
+            width: 14px;
+            height: 14px;
+            margin-right: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+
+        .legend-label {
+            font-size: 0.8em;
+            color: #252653;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="legend">
+        <h4>Cluster Legend</h4>
+    </div>
+
+    <div class="container">
+        <h1>Brainrot Analysis Lab</h1>
+        <div id="visualization">
+            <div class="loading">Loading data...</div>
+        </div>
+    </div>
+
+    <div class="control-buttons">
+        <button id="reset-zoom-btn" title="Reset Zoom">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                <path d="M21 21v-5h-5" />
+            </svg>
+        </button>
+        <button id="sound-toggle-btn" class="muted" title="Toggle Sound">
+            <svg class="sound-on-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <svg class="sound-off-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <line x1="22" y1="9" x2="16" y2="15"></line>
+                <line x1="16" y1="9" x2="22" y2="15"></line>
+            </svg>
+        </button>
+        <button id="toggle-hover-play-btn" title="Enable Video Hover">
+            <svg class="hover-play-disabled-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg class="hover-play-enabled-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+        </button>
+        <div class="toggle-switch-container" title="Toggle Dots Mode">
+            <span class="toggle-label">Dots</span>
+            <label for="dots-mode-checkbox" class="toggle-switch">
+                <input type="checkbox" id="dots-mode-checkbox">
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div class="toggle-switch-container" title="Toggle Label Type (Off=Cluster, On=Prediction)">
+            <span class="toggle-label">Label</span>
+            <label for="label-mode-checkbox" class="toggle-switch">
+                <input type="checkbox" id="label-mode-checkbox">
+                <span class="slider round"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="filter-controls">
+        <div class="filter-section">
+            <div class="filter-controls-header">
+                <label>Filter by Day:</label>
+                <button id="reset-day-filter-btn">Reset Days</button>
+            </div>
+            <div class="filter-controls-days">
+                <div class="checkbox-item all-item">
+                    <input type="checkbox" id="day-all" value="all" checked>
+                    <label for="day-all">All Days</label>
+                </div>
+                <div class="checkbox-list-container" id="day-checkbox-list">
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-controls-header">
+                <h4 id="label-filter-title">Filter by Cluster:</h4>
+                <button id="reset-label-filter-btn">Reset Labels</button>
+            </div>
+            <div class="filter-controls-labels">
+                <div class="checkbox-item all-item">
+                    <input type="checkbox" id="label-all" value="all" checked>
+                    <label for="label-all">All Labels</label>
+                </div>
+                <div class="checkbox-list-container" id="label-checkbox-list">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="dot-thumbnail-tooltip"
+        style="position: absolute; display: none; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 3px; border-radius: 3px; z-index: 110; pointer-events: none;">
+        <img src="" alt="thumbnail" style="width: 180px; height: auto; display: block;">
+    </div>
+
+    <script>
+        const config = {
+            width: document.getElementById('visualization').clientWidth || 1600,
+            height: 950,
+            thumbnailSize: 45,
+            hoverScaleFactor: 2.8,
+            maxThumbnails: 200,
+            imageBaseURL: '/thumbnails/',
+            videoBaseURL: '/video_reels/',
+            contourBandwidth: 80,
+            contourThresholds: 6,
+            contourOpacity: 0.45
+        };
+
+        let isMuted = true;
+        let isVideoPlaybackEnabled = false;
+        let isDotsModeEnabled = false;
+        let isLabelModePrediction = false;
+        let zoom;
+        let allData = [];
+        let initialDisplayData = [];
+        let uniqueDays = [];
+        let currentUniqueActiveLabels = [];
+        let selectedDays = new Set();
+        let selectedActiveLabels = new Set();
+        let svg, container, xScale, yScale, predictionColorScale;
+
+        const visualizationDiv = d3.select("#visualization");
+        const legendDiv = d3.select("#legend");
+        const soundButton = d3.select("#sound-toggle-btn");
+        const resetButton = d3.select("#reset-zoom-btn");
+        const filterControls = d3.select(".filter-controls");
+        const dayFilterContainer = filterControls.select(".filter-controls-days");
+        const dayCheckboxList = dayFilterContainer.select("#day-checkbox-list");
+        const dayAllCheckbox = dayFilterContainer.select("#day-all");
+        const resetDayFilterButton = filterControls.select("#reset-day-filter-btn");
+
+        const labelFilterContainer = filterControls.select(".filter-controls-labels");
+        const labelFilterTitle = filterControls.select("#label-filter-title");
+        const labelCheckboxList = labelFilterContainer.select("#label-checkbox-list");
+        const labelAllCheckbox = labelFilterContainer.select("#label-all");
+        const resetLabelFilterButton = filterControls.select("#reset-label-filter-btn");
+
+
+        const toggleHoverPlayButton = d3.select("#toggle-hover-play-btn");
+        const dotsModeCheckbox = d3.select("#dots-mode-checkbox");
+        const labelModeCheckbox = d3.select("#label-mode-checkbox");
+        const dotThumbnailTooltip = d3.select("#dot-thumbnail-tooltip");
+        const dotThumbnailTooltipImg = dotThumbnailTooltip.select("img");
+
+        function getActiveLabel(d) {
+            return isLabelModePrediction ? d.payload.zero_shot_prediction : String(d.payload.cluster);
+        }
+
+        function populateDayFilter() {
+            dayCheckboxList.selectAll(".checkbox-item").remove();
+            uniqueDays.forEach(day => {
+                const dayId = `day-${day}`;
+                const item = dayCheckboxList.append("div")
+                    .attr("class", "checkbox-item");
+
+                item.append("input")
+                    .attr("type", "checkbox")
+                    .attr("id", dayId)
+                    .attr("value", day)
+                    .attr("class", "day-checkbox")
+                    .property("checked", selectedDays.has(String(day)));
+
+                item.append("label")
+                    .attr("for", dayId)
+                    .text(`Day ${day}`);
+            });
+            updateAllDaysCheckboxVisualState();
+        }
+
+        function populateLabelFilter() {
+            labelCheckboxList.selectAll(".checkbox-item").remove();
+            currentUniqueActiveLabels.forEach(label => {
+                const labelId = `label-${String(label).replace(/\s+/g, '-')}`; // Create safe ID
+                const item = labelCheckboxList.append("div")
+                    .attr("class", "checkbox-item");
+
+                item.append("input")
+                    .attr("type", "checkbox")
+                    .attr("id", labelId)
+                    .attr("value", label)
+                    .attr("class", "label-checkbox")
+                    .property("checked", selectedActiveLabels.has(String(label)));
+
+                item.append("label")
+                    .attr("for", labelId)
+                    .attr("title", label) // Show full label on hover
+                    .text(label);
+            });
+            updateAllLabelsCheckboxVisualState();
+        }
+
+
+        function updateScaleAndLegend() {
+            currentUniqueActiveLabels = [...new Set(initialDisplayData.map(d => getActiveLabel(d)))].sort(d3.ascending);
+
+            predictionColorScale = d3.scaleOrdinal(d3.schemeCategory10)
+                .domain(currentUniqueActiveLabels);
+
+            legendDiv.selectAll(".legend-item").remove();
+            currentUniqueActiveLabels.forEach(label => {
+                const item = legendDiv.append("div").attr("class", "legend-item");
+                item.append("span")
+                    .attr("class", "legend-color-box")
+                    .style("background-color", predictionColorScale(label));
+                item.append("span")
+                    .attr("class", "legend-label")
+                    .attr("title", label)
+                    .text(label);
+            });
+            const legendTitle = isLabelModePrediction ? "Prediction Legend" : "Cluster Legend";
+            legendDiv.select("h4").text(legendTitle);
+            labelFilterTitle.text(isLabelModePrediction ? "Filter by Prediction:" : "Filter by Cluster:");
+
+            // Reset label selection and repopulate filter when mode changes
+            selectedActiveLabels = new Set(currentUniqueActiveLabels.map(String));
+            populateLabelFilter();
+
+        }
+
+
+        function handleDotMouseover(event, d) {
+            const thumbPath = config.imageBaseURL + d.payload.video_id + ".jpg";
+            dotThumbnailTooltipImg.attr("src", thumbPath);
+            const [offsetX, offsetY] = [15, 10];
+            dotThumbnailTooltip
+                .style("display", "block")
+                .style("left", (event.pageX + offsetX) + "px")
+                .style("top", (event.pageY + offsetY) + "px");
+            d3.select(this).attr("stroke", "#333").attr("stroke-width", 1.5).raise();
+        }
+
+        function handleDotMouseout(event, d) {
+            dotThumbnailTooltip.style("display", "none");
+            dotThumbnailTooltipImg.attr("src", "");
+            d3.select(this).attr("stroke", null).attr("stroke-width", null);
+        }
+
+        function handleThumbnailMouseover(event, d) {
+            if (!isVideoPlaybackEnabled) return;
+            const group = d3.select(this);
+            const fo = group.select("foreignObject");
+            const video = fo.select("video").node();
+            const thumbnail = fo.select("img").node();
+            group.raise();
+            const enlargedSize = config.thumbnailSize * config.hoverScaleFactor;
+            fo.transition().duration(150)
+                .attr("x", -enlargedSize / 2)
+                .attr("y", -enlargedSize / 2)
+                .attr("width", enlargedSize)
+                .attr("height", enlargedSize);
+            thumbnail.style.display = "none";
+            video.style.display = "block";
+            video.muted = isMuted;
+            video.currentTime = 0;
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.error("Video play failed on hover:", error);
+                    if (video.paused) {
+                        video.style.display = "none";
+                        thumbnail.style.display = "block";
+                    }
+                });
+            }
+        }
+
+        function handleThumbnailMouseout(event, d) {
+            const group = d3.select(this);
+            if (!group.node()) return;
+            const fo = group.select("foreignObject");
+            if (!fo.node()) return;
+            const video = fo.select("video").node();
+            const thumbnail = fo.select("img").node();
+            fo.transition().duration(150)
+                .attr("x", -config.thumbnailSize / 2)
+                .attr("y", -config.thumbnailSize / 2)
+                .attr("width", config.thumbnailSize)
+                .attr("height", config.thumbnailSize);
+            if (video && !video.paused) { video.pause(); }
+            if (video) video.style.display = "none";
+            if (thumbnail) thumbnail.style.display = "block";
+        }
+
+        function updateVisualization() { // Removed selectedDays param, uses global Set now
+            let filteredByDay;
+            if (selectedDays.size === 0 && uniqueDays.length > 0) { // Handle case where all days are unchecked
+                filteredByDay = [];
+            } else if (selectedDays.size === uniqueDays.length || uniqueDays.length === 0) { // All days selected or no days loaded yet
+                filteredByDay = initialDisplayData;
+            } else {
+                filteredByDay = initialDisplayData.filter(d => selectedDays.has(String(d.payload.day)));
+            }
+
+            let currentDisplayData;
+            if (selectedActiveLabels.size === 0 && currentUniqueActiveLabels.length > 0) { // Handle case where all labels are unchecked
+                currentDisplayData = [];
+            } else if (selectedActiveLabels.size === currentUniqueActiveLabels.length || currentUniqueActiveLabels.length === 0) { // All labels selected or no labels loaded yet
+                currentDisplayData = filteredByDay;
+            } else {
+                currentDisplayData = filteredByDay.filter(d => selectedActiveLabels.has(getActiveLabel(d)));
+            }
+
+
+            container.selectAll("*").remove();
+
+            const contourLayer = container.insert("g", ":first-child")
+                .attr("class", "contour-layer");
+
+            if (!isDotsModeEnabled) {
+                const groupedData = d3.group(currentDisplayData, d => getActiveLabel(d));
+                groupedData.forEach((predictionData, activeLabel) => {
+                    const screenPoints = predictionData.map(d => [
+                        xScale(d.reduced_embedding_normalized[0]),
+                        yScale(d.reduced_embedding_normalized[1])
+                    ]);
+
+                    if (screenPoints.length > 2) {
+                        const densityContours = d3.contourDensity()
+                            .x(d => d[0]).y(d => d[1])
+                            .size([config.width, config.height])
+                            .bandwidth(config.contourBandwidth)
+                            .thresholds(config.contourThresholds)
+                            (screenPoints);
+
+                        contourLayer.selectAll(`.contour-label-${String(activeLabel).replace(/\s+/g, '-')}`)
+                            .data(densityContours).enter().append("path")
+                            .attr("class", `contour contour-label-${String(activeLabel).replace(/\s+/g, '-')}`)
+                            .attr("d", d3.geoPath())
+                            .attr("fill", predictionColorScale(activeLabel))
+                            .style("fill-opacity", config.contourOpacity);
+                    }
+                });
+            }
+
+
+            if (isDotsModeEnabled) {
+                container.selectAll("circle.dot-node")
+                    .data(currentDisplayData, d => d.payload.video_id)
+                    .enter().append("circle")
+                    .attr("class", "dot-node")
+                    .attr("cx", d => xScale(d.reduced_embedding_normalized[0]))
+                    .attr("cy", d => yScale(d.reduced_embedding_normalized[1]))
+                    .attr("r", 5)
+                    .attr("fill", d => predictionColorScale(getActiveLabel(d)))
+                    .style("cursor", "pointer")
+                    .on("mouseover", handleDotMouseover)
+                    .on("mouseout", handleDotMouseout);
+
+            } else {
+                const groups = container.selectAll("g.thumbnail-group")
+                    .data(currentDisplayData, d => d.payload.video_id)
+                    .enter().append("g")
+                    .attr("class", "thumbnail-group")
+                    .attr("transform", d => `translate(${xScale(d.reduced_embedding_normalized[0])}, ${yScale(d.reduced_embedding_normalized[1])})`);
+
+                const foreignObjects = groups.append("foreignObject")
+                    .attr("class", "thumbnail-foreign-object")
+                    .attr("x", -config.thumbnailSize / 2).attr("y", -config.thumbnailSize / 2)
+                    .attr("width", config.thumbnailSize).attr("height", config.thumbnailSize);
+
+                foreignObjects.html(d => {
+                    const thumbPath = config.imageBaseURL + d.payload.video_id + ".jpg";
+                    const videoPath = config.videoBaseURL + d.payload.video_id + ".mp4";
+                    const mutedAttribute = isMuted ? 'muted' : '';
+                    return `<img src="${thumbPath}" class="fo-content fo-thumbnail" alt="Thumbnail ${d.payload.video_id}" loading="lazy" onerror="this.style.display='none'"><video class="fo-content fo-video" loop playsinline preload="metadata" src="${videoPath}" ${mutedAttribute}></video>`.trim();
+                });
+
+                groups.on("mouseover", handleThumbnailMouseover).on("mouseout", handleThumbnailMouseout);
+            }
+
+            if (svg && zoom) {
+                svg.call(zoom);
+                const currentTransform = d3.zoomTransform(svg.node());
+                if (currentTransform && !(currentTransform.k === 1 && currentTransform.x === 0 && currentTransform.y === 0)) {
+                    container.attr("transform", currentTransform);
+                } else { container.attr("transform", null); }
+            }
+        }
+
+        function triggerUpdate() {
+            updateVisualization(); // Now just calls update directly
+        }
+
+        function updateAllDaysCheckboxVisualState() {
+            const totalDays = uniqueDays.length;
+            const checkedCount = selectedDays.size;
+            const allDaysNode = dayAllCheckbox.node();
+
+            if (totalDays === 0) {
+                allDaysNode.checked = true; allDaysNode.indeterminate = false; return;
+            }
+            if (checkedCount === totalDays) {
+                allDaysNode.checked = true; allDaysNode.indeterminate = false;
+            } else if (checkedCount === 0) {
+                allDaysNode.checked = false; allDaysNode.indeterminate = false;
+            } else {
+                allDaysNode.checked = false; allDaysNode.indeterminate = true;
+            }
+        }
+
+        function updateAllLabelsCheckboxVisualState() {
+            const totalLabels = currentUniqueActiveLabels.length;
+            const checkedCount = selectedActiveLabels.size;
+            const allLabelsNode = labelAllCheckbox.node();
+
+            if (totalLabels === 0) {
+                allLabelsNode.checked = true; allLabelsNode.indeterminate = false; return;
+            }
+
+            if (checkedCount === totalLabels) {
+                allLabelsNode.checked = true; allLabelsNode.indeterminate = false;
+            } else if (checkedCount === 0) {
+                allLabelsNode.checked = false; allLabelsNode.indeterminate = false;
+            } else {
+                allLabelsNode.checked = false; allLabelsNode.indeterminate = true;
+            }
+        }
+
+
+        d3.json("video_tsne_enriched_data_viz_without_base64.json")
+            .then((loadedData) => {
+                allData = loadedData;
+                if (allData.length > config.maxThumbnails) {
+                    const shuffle = (array) => array.sort(() => Math.random() - 0.5);
+                    initialDisplayData = shuffle(allData.slice()).slice(0, config.maxThumbnails);
+                    console.log(`Displaying ${config.maxThumbnails} random samples out of ${allData.length}`);
+                } else { initialDisplayData = allData; }
+
+                visualizationDiv.select(".loading").remove();
+
+                svg = visualizationDiv.append("svg")
+                    .attr("width", "100%").attr("height", config.height)
+                    .attr("viewBox", `0 0 ${config.width} ${config.height}`)
+                    .style("background-color", "#ffffff");
+                container = svg.append("g");
+
+                const xExtent = d3.extent(initialDisplayData, d => d.reduced_embedding_normalized[0]);
+                const yExtent = d3.extent(initialDisplayData, d => d.reduced_embedding_normalized[1]);
+                const padding = 0.05;
+                const xDomain = xExtent && xExtent.length === 2 ? [xExtent[0] - padding, xExtent[1] + padding] : [0, 1];
+                const yDomain = yExtent && yExtent.length === 2 ? [yExtent[0] - padding, yExtent[1] + padding] : [0, 1];
+
+                xScale = d3.scaleLinear().domain(xDomain).range([config.thumbnailSize * config.hoverScaleFactor / 2, config.width - config.thumbnailSize * config.hoverScaleFactor / 2]);
+                yScale = d3.scaleLinear().domain(yDomain).range([config.thumbnailSize * config.hoverScaleFactor / 2, config.height - config.thumbnailSize * config.hoverScaleFactor / 2]);
+
+                uniqueDays = [...new Set(allData.map(d => d.payload.day))].sort(d3.ascending);
+                selectedDays = new Set(uniqueDays.map(String)); // Initialize selection
+
+                zoom = d3.zoom().scaleExtent([0.3, 10]).on("zoom", (event) => { if (container) container.attr("transform", event.transform); });
+                if (svg) svg.call(zoom);
+
+                updateScaleAndLegend(); // Sets initial scale, legend, labels, resets label filter
+                populateDayFilter(); // Populate day filter checkboxes
+                updateVisualization(); // Initial draw
+
+                // --- Event Listeners ---
+                soundButton.on("click", () => {
+                    isMuted = !isMuted;
+                    soundButton.classed("muted", isMuted);
+                    soundButton.attr("title", isMuted ? "Unmute" : "Mute");
+                    if (container) container.selectAll("video").property("muted", isMuted);
+                });
+                soundButton.classed("muted", isMuted).attr("title", isMuted ? "Unmute" : "Mute");
+
+                resetButton.on("click", () => { if (svg && zoom) { svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity); } });
+
+                toggleHoverPlayButton.on("click", function () {
+                    isVideoPlaybackEnabled = !isVideoPlaybackEnabled;
+                    d3.select(this).classed("enabled", isVideoPlaybackEnabled).attr("title", isVideoPlaybackEnabled ? "Disable Video Hover" : "Enable Video Hover");
+                    if (!isVideoPlaybackEnabled && container) { const hg = container.select("g.thumbnail-group:hover").node(); if (hg) handleThumbnailMouseout.call(hg); }
+                });
+                toggleHoverPlayButton.classed("enabled", isVideoPlaybackEnabled).attr("title", isVideoPlaybackEnabled ? "Disable Video Hover" : "Enable Video Hover");
+
+                dotsModeCheckbox.on("change", function (event) {
+                    isDotsModeEnabled = event.target.checked;
+                    if (!isDotsModeEnabled) { dotThumbnailTooltip.style("display", "none"); }
+                    triggerUpdate();
+                });
+                dotsModeCheckbox.property("checked", isDotsModeEnabled);
+
+                labelModeCheckbox.on("change", function (event) {
+                    isLabelModePrediction = event.target.checked;
+                    updateScaleAndLegend(); // This also resets label filter selection
+                    triggerUpdate();
+                });
+                labelModeCheckbox.property("checked", isLabelModePrediction);
+
+                // Day Filter Listeners
+                dayAllCheckbox.on("change", function () {
+                    const isChecked = d3.select(this).property("checked");
+                    dayCheckboxList.selectAll('.day-checkbox').property('checked', isChecked);
+                    if (isChecked) { selectedDays = new Set(uniqueDays.map(String)); } else { selectedDays.clear(); }
+                    updateAllDaysCheckboxVisualState(); // Update self state visually
+                    triggerUpdate();
+                });
+
+                dayCheckboxList.on("change", function (event) {
+                    if (event.target.classList.contains('day-checkbox')) {
+                        const dayValue = event.target.value;
+                        if (event.target.checked) { selectedDays.add(dayValue); } else { selectedDays.delete(dayValue); }
+                        updateAllDaysCheckboxVisualState();
+                        triggerUpdate();
+                    }
+                });
+
+                resetDayFilterButton.on("click", () => {
+                    selectedDays = new Set(uniqueDays.map(String));
+                    dayCheckboxList.selectAll('.day-checkbox').property('checked', true);
+                    updateAllDaysCheckboxVisualState();
+                    triggerUpdate();
+                });
+
+                // Label Filter Listeners
+                labelAllCheckbox.on("change", function () {
+                    const isChecked = d3.select(this).property("checked");
+                    labelCheckboxList.selectAll('.label-checkbox').property('checked', isChecked);
+                    if (isChecked) { selectedActiveLabels = new Set(currentUniqueActiveLabels.map(String)); } else { selectedActiveLabels.clear(); }
+                    updateAllLabelsCheckboxVisualState();
+                    triggerUpdate();
+                });
+
+                labelCheckboxList.on("change", function (event) {
+                    if (event.target.classList.contains('label-checkbox')) {
+                        const labelValue = event.target.value;
+                        if (event.target.checked) { selectedActiveLabels.add(labelValue); } else { selectedActiveLabels.delete(labelValue); }
+                        updateAllLabelsCheckboxVisualState();
+                        triggerUpdate();
+                    }
+                });
+
+                resetLabelFilterButton.on("click", () => {
+                    selectedActiveLabels = new Set(currentUniqueActiveLabels.map(String));
+                    labelCheckboxList.selectAll('.label-checkbox').property('checked', true);
+                    updateAllLabelsCheckboxVisualState();
+                    triggerUpdate();
+                });
+
+
+            })
+            .catch((error) => {
+                console.error("Error loading data:", error);
+                const loading = visualizationDiv.select(".loading");
+                if (!loading.empty()) { loading.text("Error loading data. Check console."); }
+                else { visualizationDiv.append("div").attr("class", "loading").text("Error loading data. Check console."); }
+            });
+    </script>
+</body>
+
+</html>

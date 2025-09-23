@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brainrot Analysis Lab</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Raleway', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #EDC9C4;
+            color: #252653;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding-top: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1600px;
+            margin: 0;
+            background-color: #ffebcb;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            border: 1px solid #EDC9C4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #70234B;
+            font-weight: 700;
+            margin-top: 0;
+        }
+
+        #visualization {
+            position: relative;
+            width: 100%;
+            height: 950px;
+            background-color: #ffffff;
+            border: 1px solid #EDC9C4;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: grab;
+        }
+
+        #visualization:active {
+            cursor: grabbing;
+        }
+
+        .contour {
+            fill-opacity: 0.4;
+            stroke: none;
+            pointer-events: none;
+        }
+
+        .thumbnail-group {
+            cursor: pointer;
+        }
+
+        .thumbnail-foreign-object {
+            transition: transform 0.15s ease-in-out, width 0.15s ease-in-out, height 0.15s ease-in-out, x 0.15s ease-in-out, y 0.15s ease-in-out;
+            overflow: hidden;
+            border-radius: 3px;
+            background-color: transparent;
+            will-change: transform, width, height, x, y;
+        }
+
+        .fo-content {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            margin: 0;
+            padding: 0;
+            border: none;
+            background-color: transparent;
+        }
+
+        .fo-thumbnail {}
+
+        .fo-video {
+            display: none;
+        }
+
+        .thumbnail-group:hover .fo-video {
+            object-fit: contain;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #514E80;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .control-buttons {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .control-buttons button {
+            width: 45px;
+            height: 45px;
+            background-color: #E76D67;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            transition: background-color 0.2s ease;
+        }
+
+        .control-buttons button:hover {
+            background-color: #D95C56;
+        }
+
+        .control-buttons button svg {
+            width: 24px;
+            height: 24px;
+            stroke: #ffffff;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        #sound-toggle-btn .sound-on-icon {
+            display: block;
+        }
+
+        #sound-toggle-btn .sound-off-icon {
+            display: none;
+        }
+
+        #sound-toggle-btn.muted .sound-on-icon {
+            display: none;
+        }
+
+        #sound-toggle-btn.muted .sound-off-icon {
+            display: block;
+        }
+
+        .filter-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+            background-color: rgba(255, 235, 203, 0.85);
+            padding: 10px 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .filter-controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .filter-controls-header label {
+            font-family: 'Raleway', Arial, sans-serif;
+            color: #70234B;
+            font-weight: 700;
+            font-size: 0.95em;
+            margin: 0;
+        }
+
+        .filter-controls-days {
+            display: flex;
+            flex-direction: column;
+            /* Changed to column for vertical layout */
+            gap: 5px;
+            /* Adjusted gap for vertical layout */
+        }
+
+        .filter-controls-days .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .filter-controls-days .checkbox-item input[type="checkbox"] {
+            cursor: pointer;
+            accent-color: #E76D67;
+        }
+
+        .filter-controls-days .checkbox-item label {
+            font-family: 'Raleway', Arial, sans-serif;
+            color: #252653;
+            font-size: 0.85em;
+            cursor: pointer;
+            user-select: none;
+        }
+
+
+        .filter-controls button#reset-filter-btn {
+            font-family: 'Raleway', Arial, sans-serif;
+            background-color: #E76D67;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease;
+            margin-left: auto;
+        }
+
+        .filter-controls button#reset-filter-btn:hover {
+            background-color: #D95C56;
+        }
+
+        #all-days-item {
+            font-weight: bold;
+            width: 100%;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #EDC9C4;
+            padding-bottom: 5px;
+        }
+
+        #all-days-item label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Brainrot Analysis Lab</h1>
+        <div id="visualization">
+            <div class="loading">Loading data...</div>
+        </div>
+    </div>
+
+    <div class="control-buttons">
+        <button id="reset-zoom-btn" title="Reset Zoom">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                <path d="M21 21v-5h-5" />
+            </svg>
+        </button>
+        <button id="sound-toggle-btn" class="muted" title="Toggle Sound">
+            <svg class="sound-on-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <svg class="sound-off-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <line x1="22" y1="9" x2="16" y2="15"></line>
+                <line x1="16" y1="9" x2="22" y2="15"></line>
+            </svg>
+        </button>
+    </div>
+
+    <div class="filter-controls">
+        <div class="filter-controls-header">
+            <label>Filter by Day:</label>
+            <button id="reset-filter-btn">Reset Filter</button>
+        </div>
+        <div class="filter-controls-days">
+            <div class="checkbox-item" id="all-days-item">
+                <input type="checkbox" id="day-all" value="all" checked>
+                <label for="day-all">All Days</label>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const config = {
+            width: document.getElementById('visualization').clientWidth,
+            height: 950,
+            thumbnailSize: 45,
+            hoverScaleFactor: 2.8,
+            maxThumbnails: 2000,
+            imageBaseURL: '/thumbnails/',
+            videoBaseURL: '/video_reels/',
+            contourBandwidth: 80,
+            contourThresholds: 6,
+            contourOpacity: 0.45
+        };
+
+        let isMuted = true;
+        let zoom;
+        let allData = [];
+        let initialDisplayData = [];
+        let uniqueDays = [];
+        let svg, container, xScale, yScale, colorScale, uniqueClusters;
+
+        const visualizationDiv = d3.select("#visualization");
+        const soundButton = d3.select("#sound-toggle-btn");
+        const resetButton = d3.select("#reset-zoom-btn");
+        const filterControlsDaysDiv = d3.select(".filter-controls-days");
+        const resetFilterButton = d3.select("#reset-filter-btn");
+        const allDaysCheckbox = d3.select("#day-all");
+
+
+        function updateVisualization(selectedDays = []) {
+            let currentDisplayData;
+
+            if (selectedDays.length === 0) {
+                currentDisplayData = initialDisplayData;
+            } else {
+                currentDisplayData = initialDisplayData.filter(d => selectedDays.includes(String(d.payload.day)));
+            }
+
+            container.selectAll("*").remove();
+
+            const contourLayer = container.insert("g", ":first-child")
+                .attr("class", "contour-layer");
+
+            const groupedData = d3.group(currentDisplayData, d => d.cluster);
+            groupedData.forEach((clusterData, clusterId) => {
+                const screenPoints = clusterData.map(d => [
+                    xScale(d.reduced_embedding_normalized[0]),
+                    yScale(d.reduced_embedding_normalized[1])
+                ]);
+
+                if (screenPoints.length > 2) {
+                    const densityContours = d3.contourDensity()
+                        .x(d => d[0])
+                        .y(d => d[1])
+                        .size([config.width, config.height])
+                        .bandwidth(config.contourBandwidth)
+                        .thresholds(config.contourThresholds)
+                        (screenPoints);
+
+                    contourLayer.selectAll(`.contour-cluster-${clusterId}`)
+                        .data(densityContours)
+                        .enter().append("path")
+                        .attr("class", `contour contour-cluster-${clusterId}`)
+                        .attr("d", d3.geoPath())
+                        .attr("fill", colorScale(clusterId))
+                        .style("fill-opacity", config.contourOpacity);
+                }
+            });
+
+            const groups = container
+                .selectAll("g.thumbnail-group")
+                .data(currentDisplayData, d => d.payload.video_id)
+                .enter()
+                .append("g")
+                .attr("class", "thumbnail-group")
+                .attr("transform", d => `translate(${xScale(d.reduced_embedding_normalized[0])}, ${yScale(d.reduced_embedding_normalized[1])})`);
+
+            const foreignObjects = groups.append("foreignObject")
+                .attr("class", "thumbnail-foreign-object")
+                .attr("x", -config.thumbnailSize / 2)
+                .attr("y", -config.thumbnailSize / 2)
+                .attr("width", config.thumbnailSize)
+                .attr("height", config.thumbnailSize);
+
+            foreignObjects.html(d => {
+                const thumbPath = config.imageBaseURL + d.payload.video_id + ".jpg";
+                const videoPath = config.videoBaseURL + d.payload.video_id + ".mp4";
+                return `
+                    <img src="${thumbPath}" class="fo-content fo-thumbnail" alt="Thumbnail ${d.payload.video_id}" loading="lazy" onerror="this.style.display='none'">
+                    <video class="fo-content fo-video" loop playsinline preload="metadata" src="${videoPath}"></video>
+                `.trim();
+            });
+
+            groups.on("mouseover", function (event, d) {
+                const group = d3.select(this);
+                const fo = group.select("foreignObject");
+                const video = fo.select("video").node();
+                const thumbnail = fo.select("img").node();
+
+                group.raise();
+
+                const enlargedSize = config.thumbnailSize * config.hoverScaleFactor;
+
+                fo.transition().duration(150)
+                    .attr("x", -enlargedSize / 2)
+                    .attr("y", -enlargedSize / 2)
+                    .attr("width", enlargedSize)
+                    .attr("height", enlargedSize);
+
+                thumbnail.style.display = "none";
+                video.style.display = "block";
+
+                video.muted = isMuted;
+                video.currentTime = 0;
+
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        if (video.paused) {
+                            video.style.display = "none";
+                            thumbnail.style.display = "block";
+                        }
+                    });
+                }
+            })
+                .on("mouseout", function (event, d) {
+                    const group = d3.select(this);
+                    const fo = group.select("foreignObject");
+                    const video = fo.select("video").node();
+                    const thumbnail = fo.select("img").node();
+
+                    fo.transition().duration(150)
+                        .attr("x", -config.thumbnailSize / 2)
+                        .attr("y", -config.thumbnailSize / 2)
+                        .attr("width", config.thumbnailSize)
+                        .attr("height", config.thumbnailSize);
+
+                    video.pause();
+                    video.style.display = "none";
+                    thumbnail.style.display = "block";
+                });
+
+            svg.call(zoom);
+            const currentTransform = d3.zoomTransform(svg.node());
+            if (currentTransform !== d3.zoomIdentity) {
+                container.attr("transform", currentTransform);
+            }
+        }
+
+        function triggerUpdate() {
+            const selectedDays = [];
+            filterControlsDaysDiv.selectAll('.day-checkbox:checked').each(function () {
+                selectedDays.push(d3.select(this).property("value"));
+            });
+            updateVisualization(selectedDays.length > 0 ? selectedDays : []);
+        }
+
+        function updateAllDaysCheckbox() {
+            const dayCheckboxes = filterControlsDaysDiv.selectAll('.day-checkbox');
+            const checkedCount = filterControlsDaysDiv.selectAll('.day-checkbox:checked').size();
+            const allDaysNode = allDaysCheckbox.node();
+
+            if (checkedCount === dayCheckboxes.size()) {
+                allDaysNode.checked = true;
+                allDaysNode.indeterminate = false;
+            } else if (checkedCount === 0) {
+                allDaysNode.checked = false;
+                allDaysNode.indeterminate = false;
+                // When nothing is selected, default to showing all
+                updateVisualization([]); // Trigger update to show all
+                return; // Exit early to avoid infinite loop with triggerUpdate below
+            } else {
+                allDaysNode.checked = false;
+                allDaysNode.indeterminate = true;
+            }
+            // Only trigger update if not in the 'checkedCount === 0' case
+            // to avoid potential infinite loop if updateVisualization([]) itself causes a change event.
+            if (checkedCount > 0) {
+                triggerUpdate();
+            }
+        }
+
+
+        d3.json("video_tsne_enriched_data_viz_without_base64.json")
+            .then((loadedData) => {
+                allData = loadedData;
+
+                if (allData.length > config.maxThumbnails) {
+                    const shuffle = function (array) { return array.sort(() => Math.random() - 0.5); };
+                    initialDisplayData = shuffle(allData.slice()).slice(0, config.maxThumbnails);
+                } else {
+                    initialDisplayData = allData;
+                }
+
+                visualizationDiv.select(".loading").remove();
+
+                svg = visualizationDiv
+                    .append("svg")
+                    .attr("width", config.width)
+                    .attr("height", config.height);
+
+                container = svg.append("g");
+
+                const xExtent = d3.extent(initialDisplayData, d => d.reduced_embedding_normalized[0]);
+                const yExtent = d3.extent(initialDisplayData, d => d.reduced_embedding_normalized[1]);
+                const padding = 0.05;
+                const xDomain = [xExtent[0] - padding, xExtent[1] + padding];
+                const yDomain = [yExtent[0] - padding, yExtent[1] + padding];
+
+                xScale = d3.scaleLinear()
+                    .domain(xDomain)
+                    .range([
+                        config.thumbnailSize * config.hoverScaleFactor / 2,
+                        config.width - config.thumbnailSize * config.hoverScaleFactor / 2
+                    ]);
+                yScale = d3.scaleLinear()
+                    .domain(yDomain)
+                    .range([
+                        config.thumbnailSize * config.hoverScaleFactor / 2,
+                        config.height - config.thumbnailSize * config.hoverScaleFactor / 2
+                    ]);
+
+                uniqueClusters = [...new Set(initialDisplayData.map(d => d.cluster))].sort(d3.ascending);
+
+                const clusterColors = [
+                    "#fcbfa4", "#f4c6d7", "#ffebcb", "#EDC9C4", "#7F7AB0",
+                    "#E68BBA", "#f39695", "#e99469", "#f3a444", "#e56d67",
+                ];
+
+                colorScale = d3.scaleOrdinal(clusterColors)
+                    .domain(uniqueClusters);
+
+                uniqueDays = [...new Set(allData.map(d => d.payload.day))].sort(d3.ascending);
+                uniqueDays.forEach(day => {
+                    const dayId = `day-${day}`;
+                    const item = filterControlsDaysDiv.append("div")
+                        .attr("class", "checkbox-item");
+
+                    item.append("input")
+                        .attr("type", "checkbox")
+                        .attr("id", dayId)
+                        .attr("value", day)
+                        .attr("class", "day-checkbox")
+                        .property("checked", true);
+
+                    item.append("label")
+                        .attr("for", dayId)
+                        .text(`Day ${day}`);
+                });
+
+                zoom = d3.zoom()
+                    .scaleExtent([0.3, 10])
+                    .on("zoom", (event) => {
+                        container.attr("transform", event.transform);
+                    });
+                svg.call(zoom);
+
+                updateVisualization(uniqueDays.map(String));
+                updateAllDaysCheckbox();
+
+                soundButton.on("click", () => {
+                    isMuted = !isMuted;
+                    soundButton.classed("muted", isMuted);
+                    soundButton.attr("title", isMuted ? "Unmute" : "Mute");
+                    container.selectAll('video').each(function () {
+                        if (this.style.display === 'block') {
+                            this.muted = isMuted;
+                            if (!isMuted && this.paused) {
+                                this.play().catch(e => console.log("Autoplay possibly prevented"));
+                            }
+                        }
+                    });
+                });
+                soundButton.classed("muted", isMuted);
+                soundButton.attr("title", isMuted ? "Unmute" : "Mute");
+
+                resetButton.on("click", () => {
+                    svg.transition().duration(300).call(
+                        zoom.transform,
+                        d3.zoomIdentity
+                    );
+                });
+
+                allDaysCheckbox.on("change", function () {
+                    const isChecked = d3.select(this).property("checked");
+                    filterControlsDaysDiv.selectAll('.day-checkbox').property('checked', isChecked);
+                    triggerUpdate();
+                });
+
+                filterControlsDaysDiv.on("change", function (event) {
+                    if (event.target.id !== 'day-all') {
+                        updateAllDaysCheckbox();
+                    }
+                });
+
+
+                resetFilterButton.on("click", () => {
+                    filterControlsDaysDiv.selectAll('.day-checkbox').property('checked', true); // Check all days
+                    updateAllDaysCheckbox(); // Update "All Days" checkbox state
+                    // triggerUpdate() will be called by updateAllDaysCheckbox if needed
+                });
+
+            })
+            .catch((error) => {
+                console.error("Error loading data:", error);
+                const loading = visualizationDiv.select(".loading");
+                if (!loading.empty()) {
+                    loading.text("Error loading data. Check console.");
+                }
+            });
+    </script>
+</body>
+
+</html>
