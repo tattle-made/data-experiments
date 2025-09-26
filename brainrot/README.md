@@ -24,6 +24,7 @@ source .venv/bin/activate
 
 3. install jupyter notebook and other related dependencies
 ```sh
+uv pip compile requirements.in -o requirements.txt
 uv pip install -r requirements.txt
 ```
 
