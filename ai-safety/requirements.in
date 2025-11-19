@@ -1,0 +1,6 @@
+structlog
+transformers
+presidio-analyzer
+presidio-anonymizer
+pdfminer.six
+pikepdf
