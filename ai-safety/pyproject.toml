@@ -1,0 +1,16 @@
+[build-system]
+requires = ["uv_build >= 0.9.9, <0.10.0"]
+build-backend = "uv_build"
+
+[project]
+name = "tattle_guardrails"
+version = "0.0.1"
+authors = [
+  { name="Tattle Civic Tech", email="kritika@tattle.co.in" },
+]
+description = "Tattle Guardrails for AI safety"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
