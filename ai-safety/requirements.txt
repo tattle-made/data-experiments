@@ -18,7 +18,9 @@ certifi==2025.11.12
 cffi==2.0.0
     # via cryptography
 charset-normalizer==3.4.4
-    # via requests
+    # via
+    #   pdfminer-six
+    #   requests
 click==8.3.1
     # via typer-slim
 cloudpathlib==0.23.0
@@ -28,12 +30,16 @@ confection==0.1.5
     #   thinc
     #   weasel
 cryptography==44.0.3
-    # via presidio-anonymizer
+    # via
+    #   pdfminer-six
+    #   presidio-anonymizer
 cymem==2.0.13
     # via
     #   preshed
     #   spacy
     #   thinc
+deprecated==1.3.1
+    # via pikepdf
 filelock==3.20.0
     # via
     #   huggingface-hub
@@ -53,6 +59,8 @@ idna==3.11
     #   tldextract
 jinja2==3.1.6
     # via spacy
+lxml==6.0.2
+    # via pikepdf
 markupsafe==3.0.3
     # via jinja2
 murmurhash==1.0.15
@@ -63,18 +71,28 @@ murmurhash==1.0.15
 numpy==2.3.5
     # via
     #   blis
+    #   pandas
     #   spacy
     #   thinc
     #   transformers
 packaging==25.0
     # via
     #   huggingface-hub
+    #   pikepdf
     #   spacy
     #   thinc
     #   transformers
     #   weasel
+pandas==2.3.3
+    # via -r requirements.in
+pdfminer-six==20251107
+    # via -r requirements.in
 phonenumbers==9.0.18
     # via presidio-analyzer
+pikepdf==10.0.2
+    # via -r requirements.in
+pillow==12.0.0
+    # via pikepdf
 preshed==3.0.12
     # via
     #   spacy
@@ -93,6 +111,10 @@ pydantic==2.12.4
     #   weasel
 pydantic-core==2.41.5
     # via pydantic
+python-dateutil==2.9.0.post0
+    # via pandas
+pytz==2025.2
+    # via pandas
 pyyaml==6.0.3
     # via
     #   huggingface-hub
@@ -114,6 +136,8 @@ requests-file==3.0.1
     # via tldextract
 safetensors==0.6.2
     # via transformers
+six==1.17.0
+    # via python-dateutil
 smart-open==7.5.0
     # via weasel
 spacy==3.8.11
@@ -156,6 +180,8 @@ typing-extensions==4.15.0
     #   typing-inspection
 typing-inspection==0.4.2
     # via pydantic
+tzdata==2025.2
+    # via pandas
 urllib3==2.5.0
     # via requests
 wasabi==1.1.3
@@ -166,7 +192,9 @@ wasabi==1.1.3
 weasel==0.4.3
     # via spacy
 wrapt==2.0.1
-    # via smart-open
+    # via
+    #   deprecated
+    #   smart-open
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

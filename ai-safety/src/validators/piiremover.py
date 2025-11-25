@@ -4,11 +4,10 @@ import os
 import re
 from presidio_analyzer import AnalyzerEngine
 from presidio_anonymizer import AnonymizerEngine
-from transformers import AutoTokenizer, AutoModelForTokenClassification
-from transformers import pipeline
 
 from ..utils.exception import LLMGuardValidationError
 from ..utils.languagedetector import LanguageDetector
+from ..models.validator import Validator
 
 DEFAULT_ENTITY_TYPES = [
     "CREDIT_CARD",
@@ -29,7 +28,7 @@ DEFAULT_ENTITY_TYPES = [
 
 ALL_SUPPORTED_LANGUAGES = ["en", "hi"]
 
-class Anonymize():
+class PIIRemover(Validator):
     """
     Anonymize sensitive data in the text using NLP (English only) and predefined regex patterns.
 
@@ -74,7 +73,7 @@ class Anonymize():
         self.analyzer = AnalyzerEngine()
         self.anonymizer = AnonymizerEngine()
 
-    def anonymize(self, text: str):
+    def execute(self, text: str):
         lang = self._language_detector.predict(text)
 
         if lang == self._language_detector.is_english(text):
@@ -83,6 +82,9 @@ class Anonymize():
             self.run_hinglish_presidio(text)
         else:
             pass
+
+    def make(self, validator_config):
+        pass
 
     def run_english_presidio(self, text: str):
         results = self.analyzer.analyze(text=text,
