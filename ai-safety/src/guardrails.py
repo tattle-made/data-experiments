@@ -1,7 +1,6 @@
 import argparse
 import json
 from guardrails import Guard
-from .utils.validator_registry import VALIDATOR_REGISTRY
 from .utils.util import GuardrailConfig
 
 class Guardrails():
@@ -22,15 +21,13 @@ class Guardrails():
         validator_instances = []
 
         for v_item in validator_items:
-            validator_cls = VALIDATOR_REGISTRY.get(v_item.type)
+            validator_cls = v_item.validator_cls
             if not validator_cls:
                 raise ValueError(f"Unknown validator type: {v_item.type}")
 
             # Convert pydantic model -> kwargs for validator constructor
             params = v_item.model_dump()
             params.pop("type")
-            validator = validator_cls(**params)
-
             validator = validator_cls(**params)
             validator_instances.append(validator)
 
