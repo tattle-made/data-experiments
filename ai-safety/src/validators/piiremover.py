@@ -1,33 +1,23 @@
 from __future__ import annotations
-
 import os
-import re
+from guardrails.validators import (
+    FailResult,
+    PassResult,
+    register_validator,
+    ValidationResult,
+    Validator,
+)
 from presidio_analyzer import AnalyzerEngine
 from presidio_anonymizer import AnonymizerEngine
+from typing import Callable, Optional
 
 from ..utils.exception import LLMGuardValidationError
 from ..utils.languagedetector import LanguageDetector
-from ..models.validator import Validator
-
-DEFAULT_ENTITY_TYPES = [
-    "CREDIT_CARD",
-    "CRYPTO",
-    "EMAIL_ADDRESS",
-    "IBAN_CODE",
-    "IP_ADDRESS",
-    "NRP",
-    "PERSON",
-    "PHONE_NUMBER",
-    "IN_PAN",
-    "IN_AADHAAR",
-    "IN_VEHICLE_REGISTRATION",
-    "IN_VOTER",
-    "IN_PASSPORT",
-    "IN_GSTIN",
-]
+from ..utils.util import ValidatorItem
 
 ALL_SUPPORTED_LANGUAGES = ["en", "hi"]
 
+@register_validator(name="pii-remover", data_type="string")
 class PIIRemover(Validator):
     """
     Anonymize sensitive data in the text using NLP (English only) and predefined regex patterns.
@@ -36,62 +26,44 @@ class PIIRemover(Validator):
     Deanonymizer can be used to replace the placeholders back to their original values.
     """
 
-    def __init__(
-        self,
-        entity_types: list[str] | None = None,
-        threshold: float = 0.5,
-        language: str = "en",
-        language_detector: LanguageDetector | None = None,
-    ) -> None:
-        """
-        Initialize an instance of Anonymize class.
+    def __init__(self, validator_config: ValidatorItem, on_fail: Optional[Callable] = None):
+        super().__init__(on_fail=on_fail)
 
-        Parameters:
-            entity_types: List of entity types to be detected. If not provided, defaults to all.
-            threshold: Acceptance threshold. Default is 0.
-            language: Language of the anonymize detect. Default is "en".
-        """
+        params = validator_config.params or {}
+        self.entity_types = params.get("entity_types", ["ALL"])
+        self.threshold = params.get("threshold", 0.5)
+        self.language = params.get("language", "en")
+        self.language_detector = params.get("language_detector", LanguageDetector())
 
-        if language not in ALL_SUPPORTED_LANGUAGES:
+        if self.language not in ALL_SUPPORTED_LANGUAGES:
             raise LLMGuardValidationError(
                 f"Language must be in the list of allowed: {ALL_SUPPORTED_LANGUAGES}"
             )
 
         os.environ["TOKENIZERS_PARALLELISM"] = "false"  # Disables huggingface/tokenizers warning
 
-        if not entity_types:
-            entity_types = DEFAULT_ENTITY_TYPES.copy()
-
-        entity_types.append("CUSTOM")
-
-        self._entity_types = entity_types
-        self._threshold = threshold
-        self._language = language
-        self._language_detector = (
-            language_detector if language_detector else LanguageDetector()
-        )
         self.analyzer = AnalyzerEngine()
         self.anonymizer = AnonymizerEngine()
 
-    def execute(self, text: str):
-        lang = self._language_detector.predict(text)
+    def _validate(self, text: str) -> ValidationResult:
+        lang = self.language_detector.predict(text)
 
-        if lang == self._language_detector.is_english(text):
-            self.run_english_presidio(text)
-        elif lang == self._language_detector.is_hindi(text):
-            self.run_hinglish_presidio(text)
+        if lang == self.language_detector.is_hindi(text):
+            anonymized_text = self.run_hinglish_presidio(text)
         else:
-            pass
+            anonymized_text = self.run_english_presidio(text)
 
-    def make(self, validator_config):
-        pass
+        if anonymized_text != text:
+            return FailResult(
+                error_message=f"{text} failed validation. Detected PII data and anonymized to {anonymized_text}."
+            )
+        return PassResult(value=text)        
 
     def run_english_presidio(self, text: str):
         results = self.analyzer.analyze(text=text,
-                                entities=self._entity_types,
                                 language="en")
-        anonymized_text = self.anonymizer.anonymize(text=text,analyzer_results=results)
-        return anonymized_text
+        anonymized = self.anonymizer.anonymize(text=text, analyzer_results=results)
+        return anonymized.text
 
     def run_hinglish_presidio(self, text: str):
-        pass
+        return text

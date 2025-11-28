@@ -5,3 +5,9 @@ presidio-anonymizer
 pdfminer.six
 pikepdf
 pandas
+pydantic
+emoji
+ftfy
+torch
+guardrails-ai==0.7.0
+pytest

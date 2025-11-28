@@ -1,0 +1,17 @@
+{
+    "guardrails": {
+        "input": [
+            {
+                "type": "lexical_slur",
+                "params": {
+                    "languages": [
+                        "en",
+                        "hi"
+                    ],
+                    "severity": "all"
+                }
+            }
+        ],
+        "output": []
+    }
+}

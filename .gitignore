@@ -6,3 +6,4 @@ working-files/*
 .idea
 **.ipynb_checkpoints/
 **.venv/
+**.pyc
