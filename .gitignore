@@ -2,7 +2,6 @@ working-files/*
 .vscode/*
 .ipynb_checkpoints/*
 .env
-*.csv
 .idea
 **.ipynb_checkpoints/
 **.venv/
