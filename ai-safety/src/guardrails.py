@@ -44,26 +44,3 @@ class Guardrails():
             data = json.load(f)
         config = GuardrailConfig(**data)
         return config
-
-def setup():
-    parser = argparse.ArgumentParser(description="Run the AI safety guardrails pipeline.")
-    parser.add_argument(
-        "--input",
-        type=str,
-        required=True,
-        help="Path to the input file or some string input",
-    )
-    args = parser.parse_args()
-    return args.input
-
-if __name__ == "__main__":
-    user_input = "/Users/kritikarupauliha/data-experiments/ai-safety/src/config_path.json"
-    guardrails = Guardrails(user_input)
-    guardrails.make()
-    
-    # Run input validators
-    safe_input = guardrails.run_input_validators("This is my phone number.")
-    # safe_input = guardrails.run_input_validators("This is my phone number +9112345635 and my passport number is ABCDEFGHIJ. You are a scumred asshole kutiya.")
-
-    # Run output validators
-    #guardrails.run_output_validators("You are a scumred asshole madarchod behenchod")
